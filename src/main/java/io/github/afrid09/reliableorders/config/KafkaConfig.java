@@ -2,6 +2,7 @@ package io.github.afrid09.reliableorders.config;
 
 import io.github.afrid09.reliableorders.fulfillment.NonRetryableEventException;
 import org.apache.kafka.clients.admin.NewTopic;
+import org.apache.kafka.common.TopicPartition;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.kafka.config.TopicBuilder;
@@ -49,7 +50,12 @@ public class KafkaConfig {
         backOff.setMultiplier(retry.multiplier());
         backOff.setMaxInterval(10_000);
 
-        DefaultErrorHandler handler = new DefaultErrorHandler(new DeadLetterPublishingRecoverer(template), backOff);
+        // Name the dead-letter topic explicitly, and keep the original partition
+        DeadLetterPublishingRecoverer recoverer = new DeadLetterPublishingRecoverer(template,
+                (record, exception) -> new TopicPartition(
+                        properties.topics().orderEventsDeadLetter(), record.partition()));
+
+        DefaultErrorHandler handler = new DefaultErrorHandler(recoverer, backOff);
         handler.addNotRetryableExceptions(NonRetryableEventException.class);
         return handler;
     }
