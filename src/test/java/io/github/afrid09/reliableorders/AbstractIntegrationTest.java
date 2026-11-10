@@ -4,6 +4,7 @@ import io.github.afrid09.reliableorders.api.CreateOrderRequest;
 import io.github.afrid09.reliableorders.api.OrderResponse;
 import java.util.UUID;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.actuate.observability.AutoConfigureObservability;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
@@ -29,6 +30,8 @@ import org.testcontainers.kafka.KafkaContainer;
                 "app.consumer.retry.initial-interval=50ms",
                 "management.otlp.tracing.export.enabled=false"
         })
+// Spring Boot disables tracing in tests by default; TracingTest needs it on
+@AutoConfigureObservability
 @Import(TestFulfillmentConfig.class)
 public abstract class AbstractIntegrationTest {
 
