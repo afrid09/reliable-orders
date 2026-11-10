@@ -1,0 +1,52 @@
+spring:
+  application:
+    name: reliable-orders
+  datasource:
+    url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/orders}
+    username: ${DATABASE_USER:orders}
+    password: ${DATABASE_PASSWORD:orders}
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    producer:
+      # Wait for all in-sync replicas and never write a duplicate on producer retry
+      acks: all
+      properties:
+        enable.idempotence: true
+    consumer:
+      group-id: fulfillment
+      auto-offset-reset: earliest
+      enable-auto-commit: false
+    template:
+      observation-enabled: true
+    listener:
+      observation-enabled: true
+      ack-mode: record
+
+app:
+  topics:
+    order-events: orders.events
+  outbox:
+    poll-interval-ms: ${OUTBOX_POLL_INTERVAL_MS:500}
+    batch-size: 100
+    send-timeout: 10s
+  consumer:
+    retry:
+      initial-interval: 200ms
+      multiplier: 2.0
+      max-retries: 4
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  tracing:
+    sampling:
+      probability: 1.0
+  otlp:
+    tracing:
+      endpoint: ${OTEL_EXPORTER_OTLP_TRACES_ENDPOINT:http://localhost:4318/v1/traces}
+
+logging:
+  pattern:
+    level: "%5p [${spring.application.name},%X{traceId:-},%X{spanId:-}]"
